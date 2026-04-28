@@ -14,7 +14,6 @@
 - [x] `summary.sh` — summary for any period (weekly, monthly, custom)
 - [x] `search.sh` — full-text search across journal
 - [x] `new-entry.sh` — create formatted entry from a prompt
-- [ ] `backup.sh` — archive to tar.gz or remote
 
 ## Phase 3: Hermes Skill Integration
 
