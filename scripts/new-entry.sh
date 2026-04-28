@@ -141,13 +141,13 @@ build_tags() {
 
 build_people() {
   if [ -n "$PEOPLE" ]; then
-    echo "$PEOPLE" | sed 's/, */\n- /g' | sed 's/^/- /'
+    echo "$PEOPLE" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/, */\n/g' | sed 's/^/- /'
   fi
 }
 
 build_links() {
   if [ -n "$LINKS" ]; then
-    echo "$LINKS" | sed 's/, */\n- /g' | sed 's/^/- /'
+    echo "$LINKS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/, */\n/g' | sed 's/^/- /'
   fi
 }
 

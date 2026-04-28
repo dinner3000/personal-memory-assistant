@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-04-28
+
+### Added
+
+- `summary.sh` — flexible journal summary generator
+  - `-w` (default): summary of last 7 days
+  - `-m [YYYY-MM]`: summary of a month
+  - `-f YYYY-MM-DD -t YYYY-MM-DD`: custom date range
+  - `--save`: write summary as a journal entry
+  - Tag frequency table with ASCII bars
+  - Timeline with entry titles and summaries
+  - People aggregation with mention counts
+
+### Fixed
+
+- `new-entry.sh`: `-p "Alice, Bob"` no longer produces double dash `- - Bob` for subsequent people
+- `summary.sh`: `extract_title` strips date prefix, people names are cleaned
+
 ## [0.3.0] — 2026-04-28
 
 ### Added

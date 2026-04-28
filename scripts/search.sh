@@ -204,7 +204,13 @@ case "$MODE" in
       exit 0
     fi
     # Count actual matches (lines matching the file:lineno: pattern)
-    TOTAL_FILES=$(list_grep "${TAG_FILTER:-$QUERY}" | wc -l)
+    if [ -n "$TAG_FILTER" ]; then
+      # Count files that actually have the tag in the Tags section
+      TOTAL_FILES=$(echo "$RESULTS" | grep -c "^--$" || true)
+      TOTAL_FILES=$((TOTAL_FILES))
+    else
+      TOTAL_FILES=$(list_grep "$QUERY" | wc -l)
+    fi
     TOTAL_MATCHES=$(echo "$RESULTS" | grep -c "^[^/]*/[^:]*:[0-9]\+:" || true)
     echo "$RESULTS"
     echo ""
