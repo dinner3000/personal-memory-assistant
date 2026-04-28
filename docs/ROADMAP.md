@@ -11,7 +11,7 @@
 
 ## Phase 2: Automation
 
-- [ ] `new-entry.sh` — create formatted entry from a prompt
+- [x] `new-entry.sh` — create formatted entry from a prompt
 - [ ] `search.sh` — full-text search across journal
 - [ ] `monthly-digest.sh` — aggregate month into summary
 - [ ] `backup.sh` — archive to tar.gz or remote

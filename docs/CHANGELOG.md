@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] — 2026-04-28
+
+### Added
+
+- `new-entry.sh` now fully functional with three input modes
+  - `-m "Title"` message mode: inline entry, no editor needed
+  - `-d "details"` with `\n` escape sequences for multi-line content
+  - stdin piping for details (pipe content into the script)
+  - `-g tags`, `-p people`, `-l links`, `-f file` flags
+  - `-t` flag to open editor after creating
+  - `--help` flag with usage reference
+
 ## [0.1.0] — 2026-04-28
 
 ### Added
