@@ -4,6 +4,21 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-04-28
+
+### Added
+
+- `search.sh` now fully functional with four output modes
+  - Default: content search with 2-line context snippets and match highlighting
+  - `-c`: compact mode — match counts per file
+  - `-l`: list mode — file paths only
+  - `-f`: search by filename pattern
+  - `-d YYYY-MM-DD`: restrict search to a single date
+  - `-m YYYY-MM`: restrict search to a month
+  - `-t tag`: search within the Tags section
+  - Summary line: "N matches in M file(s)"
+  - Color highlighting when output is a terminal
+
 ## [0.2.0] — 2026-04-28
 
 ### Added

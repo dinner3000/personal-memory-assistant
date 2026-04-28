@@ -3,70 +3,211 @@
 # search.sh — Full-text search across the journal
 #
 # Usage:
-#   ./scripts/search.sh "query"         # Search content
-#   ./scripts/search.sh -f "filename"   # Search by filename
-#   ./scripts/search.sh -d YYYY-MM-DD   # Search specific date
-#   ./scripts/search.sh -m YYYY-MM      # Search specific month
-#   ./scripts/search.sh -t "tag"        # Search by tag
+#   ./scripts/search.sh "query"           # Search content (default, with snippets)
+#   ./scripts/search.sh -c "query"        # Compact: show match counts per file
+#   ./scripts/search.sh -l "query"        # List files only
+#   ./scripts/search.sh -d YYYY-MM-DD     # Search specific date
+#   ./scripts/search.sh -m YYYY-MM        # Search specific month
+#   ./scripts/search.sh -t "tag"          # Search by tag (in Tags section)
+#   ./scripts/search.sh -f "pattern"      # Search by filename
+#
+# Options:
+#   -c        Compact mode — show match count per file
+#   -l        List mode — show file paths only
+#   -d DATE   Restrict to a single date (YYYY-MM-DD)
+#   -m MONTH  Restrict to a month (YYYY-MM)
+#   -t TAG    Search within the Tags section
+#   -f        Search by filename (pattern matched against filename)
+#   -h        Show this help
 #
 # Environment: JOURNAL_PATH (defaults to ./journal)
 #
 
 set -euo pipefail
 
-JOURNAL_DIR="${JOURNAL_PATH:-$(dirname "$0")/../journal}"
+JOURNAL_DIR="${JOURNAL_PATH:-$(cd "$(dirname "$0")/.." && pwd)/journal}"
 
-usage() {
-  echo "Usage: $0 [OPTIONS] QUERY"
-  echo "Options:"
-  echo "  -f          Search by filename (not content)"
-  echo "  -d DATE     Limit to specific date (YYYY-MM-DD)"
-  echo "  -m MONTH    Limit to specific month (YYYY-MM)"
-  echo "  -t TAG      Search for a specific tag"
-  echo "  -h          Show this help"
+if [ ! -d "$JOURNAL_DIR" ]; then
+  echo "Error: journal directory not found at $JOURNAL_DIR"
+  echo "Set JOURNAL_PATH to override."
   exit 1
-}
+fi
 
-SEARCH_TYPE="content"
-QUERY=""
+CONTEXT_LINES=2
+MODE="snippet"   # snippet | count | list
+QUERY_FILENAME=""
 DATE_FILTER=""
 MONTH_FILTER=""
 TAG_FILTER=""
 
-while getopts "fd:m:t:h" opt; do
+usage() {
+  sed -n '2,24p' "$0" | sed 's/^# //;s/^#$//'
+  exit 0
+}
+
+while getopts "cld:m:t:fh" opt; do
   case $opt in
-    f) SEARCH_TYPE="filename" ;;
+    c) MODE="count" ;;
+    l) MODE="list" ;;
     d) DATE_FILTER="$OPTARG" ;;
     m) MONTH_FILTER="$OPTARG" ;;
     t) TAG_FILTER="$OPTARG" ;;
+    f) MODE="filename" ;;
     h) usage ;;
     *) usage ;;
   esac
 done
 shift $((OPTIND-1))
+
 QUERY="$*"
 
-if [ -z "$QUERY" ] && [ -z "$TAG_FILTER" ]; then
+# Validate: need at least a query, tag filter, or filename mode
+if [ -z "$QUERY" ] && [ -z "$TAG_FILTER" ] && [ "$MODE" != "filename" ]; then
   usage
 fi
 
-# Build search path
+# ---- Build search path ----
+
 SEARCH_PATH="$JOURNAL_DIR"
+FILE_PATTERN="*.md"
+
 if [ -n "$DATE_FILTER" ]; then
   YEAR="${DATE_FILTER:0:4}"
+  FILE_PATTERN="${DATE_FILTER:5:2}-${DATE_FILTER:8:2}-*.md"
   SEARCH_PATH="$JOURNAL_DIR/$YEAR"
-  # Can narrow further if needed
 elif [ -n "$MONTH_FILTER" ]; then
   YEAR="${MONTH_FILTER:0:4}"
+  FILE_PATTERN="${MONTH_FILTER:5:2}-*.md"
   SEARCH_PATH="$JOURNAL_DIR/$YEAR"
 fi
 
-if [ "$SEARCH_TYPE" = "filename" ]; then
-  find "$SEARCH_PATH" -type f -name "*.md" -iname "*${QUERY}*" 2>/dev/null | sort
-elif [ -n "$TAG_FILTER" ]; then
-  grep -rli "^## Tags" "$SEARCH_PATH" --include="*.md" 2>/dev/null \
-    | xargs grep -li "$TAG_FILTER" 2>/dev/null \
-    | sort
-else
-  grep -rnli "$QUERY" "$SEARCH_PATH" --include="*.md" 2>/dev/null | sort
+if [ ! -d "$SEARCH_PATH" ]; then
+  echo "No entries found for this date range."
+  exit 0
 fi
+
+# ---- Check for color support ----
+COLOR_FLAG=""
+if [ -t 1 ]; then
+  COLOR_FLAG="--color=always"
+else
+  COLOR_FLAG="--color=never"
+fi
+
+# ---- grep wrapper ----
+# Returns lines like: path/file.md:lineno:matched line
+# with 2 lines of surrounding context
+
+run_grep() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rn "$COLOR_FLAG" -C "$CONTEXT_LINES" "$pattern" "$SEARCH_PATH" \
+    --include="$FILE_PATTERN" 2>/dev/null || true
+}
+
+count_grep() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rnc "$pattern" "$SEARCH_PATH" --include="$FILE_PATTERN" 2>/dev/null \
+    | grep -v ':0$' || true
+}
+
+list_grep() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rli "$pattern" "$SEARCH_PATH" --include="$FILE_PATTERN" 2>/dev/null \
+    | sort || true
+}
+
+# ---- Execute ----
+
+TOTAL_FILES=0
+TOTAL_MATCHES=0
+
+case "$MODE" in
+  filename)
+    # Search by filename
+    RESULTS=$(find "$SEARCH_PATH" -type f -name "$FILE_PATTERN" -iname "*${QUERY}*" 2>/dev/null | sort)
+    if [ -z "$RESULTS" ]; then
+      echo "No files found matching \"$QUERY\"."
+      exit 0
+    fi
+    TOTAL_FILES=$(echo "$RESULTS" | wc -l)
+    echo "$RESULTS"
+    echo ""
+    echo "--- $TOTAL_FILES file(s) found ---"
+    ;;
+
+  count)
+    # Compact: show file + match count
+    if [ -n "$TAG_FILTER" ]; then
+      # For tag search, count files containing the tag in the Tags section
+      RESULTS=$(list_grep "$TAG_FILTER" | while IFS= read -r f; do
+        count=$(grep -c "$TAG_FILTER" "$f" 2>/dev/null || echo 0)
+        echo "$f:$count"
+      done)
+    else
+      RESULTS=$(count_grep "$QUERY")
+    fi
+    if [ -z "$RESULTS" ]; then
+      echo "No matches found."
+      exit 0
+    fi
+    TOTAL_FILES=$(echo "$RESULTS" | wc -l)
+    TOTAL_MATCHES=$(echo "$RESULTS" | awk -F: '{s+=$NF}END{print s}')
+    echo "$RESULTS"
+    echo ""
+    echo "--- $TOTAL_MATCHES matches in $TOTAL_FILES file(s) ---"
+    ;;
+
+  list)
+    # File paths only
+    if [ -n "$TAG_FILTER" ]; then
+      RESULTS=$(list_grep "$TAG_FILTER")
+    else
+      RESULTS=$(list_grep "$QUERY")
+    fi
+    if [ -z "$RESULTS" ]; then
+      echo "No matches found."
+      exit 0
+    fi
+    TOTAL_FILES=$(echo "$RESULTS" | wc -l)
+    echo "$RESULTS"
+    echo ""
+    echo "--- $TOTAL_FILES file(s) ---"
+    ;;
+
+  snippet|*)
+    # Default: snippet mode with context
+    if [ -n "$TAG_FILTER" ]; then
+      # For tag search, grep the Tags section specifically
+      # Find files with ## Tags section, then check if the tag is within that section
+      RESULTS=$(list_grep "^## Tags" | while IFS= read -r f; do
+        # Check if tag appears within 5 lines after ## Tags
+        if grep -A5 "^## Tags" "$f" 2>/dev/null | grep -q "$TAG_FILTER"; then
+          # Show the matching line with context, force file path with -H
+          grep -nH "$COLOR_FLAG" -C "$CONTEXT_LINES" "$TAG_FILTER" "$f" 2>/dev/null
+          echo "--"
+        fi
+      done)
+    else
+      RESULTS=$(run_grep "$QUERY")
+    fi
+    if [ -z "$RESULTS" ]; then
+      echo "No matches found."
+      exit 0
+    fi
+    # Count actual matches (lines matching the file:lineno: pattern)
+    TOTAL_FILES=$(list_grep "${TAG_FILTER:-$QUERY}" | wc -l)
+    TOTAL_MATCHES=$(echo "$RESULTS" | grep -c "^[^/]*/[^:]*:[0-9]\+:" || true)
+    echo "$RESULTS"
+    echo ""
+    echo "--- $TOTAL_MATCHES matches in $TOTAL_FILES file(s) ---"
+    ;;
+esac
