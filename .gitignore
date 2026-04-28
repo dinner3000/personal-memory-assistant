@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Journal backup archives
+backup/*.tar.gz
+
+# Editor temp files
+*.swp
+*.swo
+*~
+
+# IDEA / VSCode
+.idea/
+.vscode/

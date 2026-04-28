@@ -1,0 +1,44 @@
+# Journal Configuration
+
+# Entry format version
+version: 1
+
+# Entry template (used by new-entry.sh)
+template:
+  date_format: "%Y-%m-%d"
+  file_name: "%Y/%m-%d-{slug}.md"  # {slug} derived from title
+  sections:
+    - title: Tags
+      required: true
+      format: comma-separated
+    - title: Summary
+      required: true
+    - title: Details
+      required: true
+    - title: People
+      required: false
+    - title: Linked
+      required: false
+
+# Recommended tags for consistent categorization
+tags:
+  categories:
+    - work
+    - life
+    - health
+    - finance
+    - learning
+    - social
+    - ideas
+    - projects
+    - travel
+    - decisions
+  prefixes:
+    - person:     # e.g., person:alice
+    - project:    # e.g., project:snap-log
+    - location:   # e.g., location:tokyo
+
+# Search defaults
+search:
+  default_path: ./journal
+  snippet_context_lines: 2
