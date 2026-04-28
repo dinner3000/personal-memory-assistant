@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] — 2026-04-28
+
+### Added
+
+- `journal-record` Hermes skill — records journal entries from natural language
+  - Triggered by phrases like "remember that..." or "save this..."
+  - Extracts title, summary, details, tags, and people from conversational input
+  - Uses new-entry.sh as backend
+  - Stored at ~/projects/hermes-skills/productivity/journal-record/
+
 ## [0.4.0] — 2026-04-28
 
 ### Added
