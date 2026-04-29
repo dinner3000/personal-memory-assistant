@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] — 2026-04-29
+
+### Added
+
+- `summary.sh --tag TAG` — filter summary to entries with a specific tag
+- `search.sh -t "tag1,tag2"` — multi-tag OR search (comma-separated)
+- Tag matching is now case-insensitive across all tag search functions
+
 ## [0.7.0] — 2026-04-29
 
 ### Added

@@ -9,12 +9,14 @@
 #   ./scripts/summary.sh -m 2026-04   # Specific month
 #   ./scripts/summary.sh -f 2026-04-20 -t 2026-04-25  # Custom range
 #   ./scripts/summary.sh -w --save    # Save summary as a journal entry
+#   ./scripts/summary.sh --tag "work"  # Only entries tagged "work"
 #
 # Options:
 #   -w              Weekly (last 7 days) — default
 #   -m [YYYY-MM]    Monthly (current or specified)
 #   -f YYYY-MM-DD   From date (start of range)
 #   -t YYYY-MM-DD   To date (end of range)
+#   --tag TAG       Filter by tag (e.g., "work", "learning")
 #   --save          Save summary as a journal entry instead of printing
 #   -h              Show this help
 #
@@ -34,6 +36,7 @@ MODE="week"
 FROM_DATE=""
 TO_DATE=""
 SAVE_MODE=false
+TAG_FILTER=""
 
 usage() {
   sed -n '2,20p' "$0" | sed 's/^# //;s/^#$//'
@@ -53,6 +56,7 @@ while [ $# -gt 0 ]; do
     -f) FROM_DATE="$2"; shift 2 ;;
     -t) TO_DATE="$2"; shift 2 ;;
     --save) SAVE_MODE=true; shift ;;
+    --tag) TAG_FILTER="$2"; shift 2 ;;
     *) echo "Unknown option: $1"; usage ;;
   esac
 done
@@ -127,6 +131,25 @@ extract_tags() {
   tags=$(grep -A1 "^## Tags" "$file" 2>/dev/null | tail -1)
   echo "$tags"
 }
+
+# ---- Filter by tag (if requested) ----
+
+if [ -n "$TAG_FILTER" ]; then
+  FILTERED_ENTRIES=()
+  for entry in "${ENTRIES[@]}"; do
+    file=$(echo "$entry" | cut -d'|' -f3-)
+    tags=$(extract_tags "$file")
+    if echo "$tags" | grep -qi "$TAG_FILTER"; then
+      FILTERED_ENTRIES+=("$entry")
+    fi
+  done
+  ENTRIES=("${FILTERED_ENTRIES[@]}")
+fi
+
+if [ -n "$TAG_FILTER" ] && [ ${#ENTRIES[@]} -eq 0 ]; then
+  echo "No entries tagged \"$TAG_FILTER\" found from $FROM_DATE to $TO_DATE."
+  exit 0
+fi
 
 extract_people() {
   local file="$1"
@@ -266,15 +289,11 @@ fi
 
 TODAY=$(date "+%Y-%m-%d")
 
-OUTPUT="━━━ Summary: ${FROM_DATE} → ${TO_DATE} ━━━
-
-Entries: ${TOTAL_ENTRIES}
-
-Tags:
-${TAG_ROWS}
-Timeline:
-${TIMELINE}People: ${PEOPLE_TEXT}
-"
+OUTPUT="━━━ Summary: ${FROM_DATE} → ${TO_DATE} ━━━"
+if [ -n "$TAG_FILTER" ]; then
+  OUTPUT+=" (tag: ${TAG_FILTER})"
+fi
+OUTPUT+=$'\n\nEntries: '"${TOTAL_ENTRIES}"$'\n\nTags:\n'"${TAG_ROWS}"$'\nTimeline:\n'"${TIMELINE}People: ${PEOPLE_TEXT}"$'\n'
 
 # ---- Output ----
 

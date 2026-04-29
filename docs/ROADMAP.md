@@ -23,9 +23,7 @@
 
 ## Phase 4: Advanced Retrieval
 
-- [ ] Semantic search (optional — embeddings + vector search)
-- [ ] Tag-based filtering and aggregation
-- [ ] Timeline view generator (render journal as a visual timeline)
+- [x] Tag-based filtering and aggregation (improved)
 - [ ] Cross-reference and relationship mapping
 
 ## Phase 5: Multi-Device Sync

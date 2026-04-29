@@ -8,7 +8,8 @@
 #   ./scripts/search.sh -l "query"        # List files only
 #   ./scripts/search.sh -d YYYY-MM-DD     # Search specific date
 #   ./scripts/search.sh -m YYYY-MM        # Search specific month
-#   ./scripts/search.sh -t "tag"          # Search by tag (in Tags section)
+#   ./scripts/search.sh -t "tag"        # Search by tag
+#   ./scripts/search.sh -t "tag1,tag2"  # Search by multiple tags (OR)(in Tags section)
 #   ./scripts/search.sh -f "pattern"      # Search by filename
 #
 # Options:
@@ -16,7 +17,7 @@
 #   -l        List mode — show file paths only
 #   -d DATE   Restrict to a single date (YYYY-MM-DD)
 #   -m MONTH  Restrict to a month (YYYY-MM)
-#   -t TAG    Search within the Tags section
+#   -t TAG    Search by tag (comma-separated for multiple OR)
 #   -f        Search by filename (pattern matched against filename)
 #   -h        Show this help
 #
@@ -64,6 +65,12 @@ QUERY="$*"
 # Validate: need at least a query, tag filter, or filename mode
 if [ -z "$QUERY" ] && [ -z "$TAG_FILTER" ] && [ "$MODE" != "filename" ]; then
   usage
+fi
+
+# Convert comma-separated tags to grep -E pattern (OR logic)
+TAG_PATTERN=""
+if [ -n "$TAG_FILTER" ]; then
+  TAG_PATTERN=$(echo "$TAG_FILTER" | sed 's/, */|/g')
 fi
 
 # ---- Build search path ----
@@ -125,6 +132,34 @@ list_grep() {
     | sort || true
 }
 
+# Extended-regex versions for tag pattern matching (OR logic)
+run_grep_extended() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rniE "$COLOR_FLAG" -C "$CONTEXT_LINES" "$pattern" "$SEARCH_PATH" \
+    --include="$FILE_PATTERN" 2>/dev/null || true
+}
+
+count_grep_extended() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rnicE "$pattern" "$SEARCH_PATH" --include="$FILE_PATTERN" 2>/dev/null \
+    | grep -v ':0$' || true
+}
+
+list_grep_extended() {
+  local pattern="$1"
+  if [ -z "$pattern" ]; then
+    return 1
+  fi
+  grep -rliE "$pattern" "$SEARCH_PATH" --include="$FILE_PATTERN" 2>/dev/null \
+    | sort || true
+}
+
 # ---- Execute ----
 
 TOTAL_FILES=0
@@ -147,9 +182,9 @@ case "$MODE" in
   count)
     # Compact: show file + match count
     if [ -n "$TAG_FILTER" ]; then
-      # For tag search, count files containing the tag in the Tags section
-      RESULTS=$(list_grep "$TAG_FILTER" | while IFS= read -r f; do
-        count=$(grep -c "$TAG_FILTER" "$f" 2>/dev/null || echo 0)
+      # For tag search, count files containing any of the tags in the Tags section
+      RESULTS=$(list_grep_extended "$TAG_PATTERN" | while IFS= read -r f; do
+        count=$(grep -ciE "$TAG_PATTERN" "$f" 2>/dev/null || true)
         echo "$f:$count"
       done)
     else
@@ -169,7 +204,7 @@ case "$MODE" in
   list)
     # File paths only
     if [ -n "$TAG_FILTER" ]; then
-      RESULTS=$(list_grep "$TAG_FILTER")
+      RESULTS=$(list_grep_extended "$TAG_PATTERN")
     else
       RESULTS=$(list_grep "$QUERY")
     fi
@@ -190,9 +225,9 @@ case "$MODE" in
       # Find files with ## Tags section, then check if the tag is within that section
       RESULTS=$(list_grep "^## Tags" | while IFS= read -r f; do
         # Check if tag appears within 5 lines after ## Tags
-        if grep -A5 "^## Tags" "$f" 2>/dev/null | grep -q "$TAG_FILTER"; then
+        if grep -A5 "^## Tags" "$f" 2>/dev/null | grep -qiE "$TAG_PATTERN"; then
           # Show the matching line with context, force file path with -H
-          grep -nH "$COLOR_FLAG" -C "$CONTEXT_LINES" "$TAG_FILTER" "$f" 2>/dev/null
+          grep -nHi "$COLOR_FLAG" -C "$CONTEXT_LINES" -E "$TAG_PATTERN" "$f" 2>/dev/null
           echo "--"
         fi
       done)
