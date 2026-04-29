@@ -2,11 +2,15 @@
 
 ## Architecture
 
-| Environment | Instance | Skills location |
-|-------------|----------|----------------|
-| **Dev** | Host Hermes (`~/.hermes/`) | `~/.hermes/skills/` (synced from PMA repo) |
-| **Production** | Docker `hermes-user1` (`~/.hermes-user1/`) | Mounted from host `~/.hermes/skills/` |
-| **Production** | Docker `hermes-user2` (`~/.hermes-user2/`) | Mounted from host `~/.hermes/skills/` |
+| Environment | Instance | Code repo | Journal repo |
+|-------------|----------|-----------|-------------|
+| **Dev** | Host Hermes (`~/.hermes/`) | `~/projects/personal-memory-assistant/` | `~/.hermes/journal/` |
+| **Production** | Docker `hermes-user1` | `/opt/data/projects/personal-memory-assistant/` | `/opt/data/journal/` |
+| **Production** | Docker `hermes-user2` | `/opt/data/projects/personal-memory-assistant/` | `/opt/data/journal/` |
+
+**Code and data are separated:**
+- **Code** (scripts, skills, config) is shared from one git repo — `dinner3000/personal-memory-assistant`
+- **Journal** (entries) lives in `$HERMES_HOME/journal/` — each user has their own independent repo
 
 **Project-scoped skills** (`journal-record`, `journal-retrieve`, `journal-digest`, `journal-relate`)
 live in the PMA repo at `skills/productivity/` and are synced to `~/.hermes/skills/` on release.

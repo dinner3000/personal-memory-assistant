@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] — 2026-04-29
+
+### Changed
+
+- **Journal separated from project repo** — journal is now at `$HERMES_HOME/journal/` (per-user)
+  - Scripts default to `$HERMES_HOME/journal/` (fallback `~/.hermes/journal/`)
+  - Each user has their own journal git repo with data isolation
+  - Project repo now tracks only code (scripts, skills, config, docs)
+  - Daily cron pushes journal repo; weekly digest saves to journal repo
+- **Release script** redesigned with `--type host --path PATH` and `--type docker --container NAME`
+- **Setup script** creates per-user journal git repo automatically
+
 ## [1.0.0] — 2026-04-29
 
 ### Added

@@ -49,7 +49,11 @@ sync_skills() {
 }
 
 setup_local() {
+  local hermes_home="${HERMES_HOME:-$HOME/.hermes}"
+  local journal_dir="$hermes_home/journal"
+
   echo "--- Setting up PMA for this machine ---"
+  echo "Journal home: $journal_dir"
 
   if [ -d "$PMA_DIR/.git" ]; then
     echo "Project already exists at $PMA_DIR"
@@ -62,8 +66,16 @@ setup_local() {
     cd "$PMA_DIR"
   fi
 
-  mkdir -p "$PMA_DIR/journal/$(date +%Y)"
-  echo "Journal dir: $PMA_DIR/journal/"
+  # Initialize journal directory
+  mkdir -p "$journal_dir/$(date +%Y)"
+  if [ ! -d "$journal_dir/.git" ]; then
+    cd "$journal_dir"
+    git init
+    git branch -m main
+    echo "  Journal git initialized at $journal_dir"
+  else
+    echo "  Journal git already exists at $journal_dir"
+  fi
 
   sync_skills "$PMA_DIR"
   echo "Done."
@@ -83,6 +95,7 @@ setup_docker() {
   docker exec -u hermes "$container_name" bash -c '
     set -euo pipefail
     PMA_DIR="$HOME/projects/personal-memory-assistant"
+    JOURNAL_DIR="$HERMES_HOME/journal"
     PMA_REPO="'"$PMA_REPO"'"
 
     if [ -d "$PMA_DIR/.git" ]; then
@@ -95,8 +108,17 @@ setup_docker() {
       git clone "$PMA_REPO" "$PMA_DIR"
     fi
 
-    mkdir -p "$PMA_DIR/journal/$(date +%Y)'
-  "
+    # Initialize journal directory
+    mkdir -p "$JOURNAL_DIR/$(date +%Y)"
+    if [ ! -d "$JOURNAL_DIR/.git" ]; then
+      cd "$JOURNAL_DIR"
+      git init
+      git branch -m main
+      echo "  Journal git initialized at $JOURNAL_DIR"
+    else
+      echo "  Journal git already exists at $JOURNAL_DIR"
+    fi
+  '
 
   # Skills are synced via host ~/.hermes/skills mount (already done if host runs setup)
   echo "Skills: synced via host ~/.hermes/skills mount"

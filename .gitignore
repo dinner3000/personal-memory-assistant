@@ -19,3 +19,6 @@ backup/*.tar.gz
 # IDEA / VSCode
 .idea/
 .vscode/
+
+# Journal entries — now a separate per-user repo at $HERMES_HOME/journal/
+journal/
