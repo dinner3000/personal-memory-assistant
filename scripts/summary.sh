@@ -220,7 +220,7 @@ render_bar() {
   if [ "$filled" -eq 0 ] && [ "$count" -gt 0 ]; then
     filled=1
   fi
-  printf "%-*s" "$filled" "" | tr ' ' '#'
+  printf "%-*s" "$filled" "" | tr ' ' '█'
 }
 
 TOTAL_ENTRIES=${#ENTRIES[@]}
