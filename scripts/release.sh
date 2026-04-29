@@ -1,150 +1,146 @@
 #!/usr/bin/env bash
 #
-# release.sh — Release the Personal Memory Assistant to Docker containers
+# release.sh — Deploy PMA updates to the current environment
 #
-# 1. Commits any pending changes and pushes to GitHub
-# 2. Updates the project in each production Docker container
+# Run this on the target machine (after SSH'ing in) to update PMA.
 #
 # Usage:
-#   ./scripts/release.sh          # Push + deploy to all containers
-#   ./scripts/release.sh user1    # Push + deploy to a single container
+#   ./scripts/release.sh                    # Deploy to all local environments
+#   ./scripts/release.sh host               # Deploy to host Hermes only
+#   ./scripts/release.sh user1              # Deploy to Docker container user1
+#   ./scripts/release.sh user2              # Deploy to Docker container user2
 #
-# Environment:
-#   PMA_REPO    GitHub repo URL (default: https://github.com/dinner3000/personal-memory-assistant.git)
+# What it does:
+#   1. Git pull the latest PMA code
+#   2. Sync PMA skills to ~/.hermes/skills/
+#   3. For Docker targets: update the container too
 #
 
 set -euo pipefail
 
-PMA_REPO="${PMA_REPO:-https://github.com/dinner3000/personal-memory-assistant.git}"
-PMA_DIR="$HOME/projects/personal-memory-assistant"
-PROD_CONTAINERS=("hermes-user1" "hermes-user2")
+PMA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SKILLS_SRC="$PMA_DIR/skills"
+HERMES_SKILLS_DIR="$HOME/.hermes/skills/productivity"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
 log_info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 usage() {
-  echo "Usage: $0 [container]"
-  echo "  container    Specific container to deploy to (e.g., 'user1'). Omit for all."
+  echo "Usage: $0 [target]"
+  echo "  target    'host', 'user1', 'user2', or empty (all local)"
   exit 1
 }
 
-# ---- Step 1: Verify and push source repo ----
+# ---- Sync PMA skills to Hermes skills dir ----
 
-push_source() {
-  log_info "Step 1: Pushing source to GitHub..."
+sync_skills() {
+  log_info "Syncing PMA skills to $HERMES_SKILLS_DIR..."
 
-  if [ ! -d "$PMA_DIR/.git" ]; then
-    log_error "Not a git repository: $PMA_DIR"
-    exit 1
+  if [ ! -d "$SKILLS_SRC/productivity" ]; then
+    log_warn "No skills found at $SKILLS_SRC/productivity — skipping."
+    return
   fi
 
-  cd "$PMA_DIR"
+  mkdir -p "$HERMES_SKILLS_DIR"
 
-  # Check for uncommitted changes
-  if [ -n "$(git status --porcelain)" ]; then
-    log_warn "Uncommitted changes found."
-    echo "  The following files are not committed:"
-    git status --short
-    echo ""
-    echo "  Commit them first, or stash with: git stash"
-    exit 1
-  fi
+  for skill_dir in "$SKILLS_SRC/productivity"/*/; do
+    skill_name=$(basename "$skill_dir")
+    target="$HERMES_SKILLS_DIR/$skill_name"
 
-  # Check branch
-  BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  log_info "Current branch: $BRANCH"
-
-  # Check if remote is reachable
-  if git remote -v | grep -q "origin"; then
-    log_info "Pushing to origin/$BRANCH..."
-    git push origin "$BRANCH"
-    log_info "Source pushed successfully."
-  else
-    log_warn "No remote configured. Skipping push."
-  fi
+    if [ -d "$target" ]; then
+      rm -rf "$target"
+    fi
+    cp -r "$skill_dir" "$target"
+    log_info "  Synced skill: $skill_name"
+  done
 }
 
-# ---- Step 2: Deploy to a container ----
+# ---- Update project on host ----
 
-deploy_to_container() {
-  local container="$1"
-  local full_name="hermes-${container}"
+update_host() {
+  log_info "Updating host environment..."
 
-  log_info "Deploying to ${full_name}..."
+  cd "$PMA_DIR"
+  if git remote -v | grep -q "origin"; then
+    git pull 2>/dev/null && log_info "Git pull: OK" || log_info "Git pull: up to date"
+  fi
 
-  # Check container is running
-  if ! docker ps --format '{{.Names}}' | grep -q "^${full_name}$"; then
-    log_error "Container '${full_name}' is not running."
+  sync_skills
+  log_info "Host update complete."
+}
+
+# ---- Update Docker container ----
+
+update_docker() {
+  local container_name="hermes-$1"
+
+  if ! docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+    log_error "Container '${container_name}' is not running."
     return 1
   fi
 
-  # Update the project inside the container (as hermes user)
-  docker exec -u hermes "$full_name" bash -c '
+  log_info "Updating container ${container_name}..."
+
+  # Update project inside container
+  docker exec -u hermes "$container_name" bash -c '
     set -euo pipefail
     PMA_DIR="$HOME/projects/personal-memory-assistant"
-    PMA_REPO="'"$PMA_REPO"'"
 
     if [ -d "$PMA_DIR/.git" ]; then
-      echo "  Pulling latest in $PMA_DIR..."
       cd "$PMA_DIR"
-      git pull
-    else
-      echo "  Cloning repo to $PMA_DIR..."
-      mkdir -p "$HOME/projects"
-      git clone "$PMA_REPO" "$PMA_DIR"
+      git pull 2>/dev/null && echo "  Git pull: OK" || echo "  Git pull: up to date"
     fi
 
-    # Ensure journal directory exists
     mkdir -p "$PMA_DIR/journal/$(date +%Y)"
-    echo "  Journal dir ready at $PMA_DIR/journal/"
-    echo "  Deploy complete for this container."
+    echo "  Journal dir ready"
   '
 
-  if [ $? -eq 0 ]; then
-    log_info "${full_name}: deployed successfully."
-  else
-    log_error "${full_name}: deploy failed."
-    return 1
-  fi
+  # Skills are shared via ~/.hermes/skills mount — already synced by host step
+  log_info "${container_name}: update complete."
 }
 
 # ---- Main ----
 
-echo "━━━ PMA Release Script ━━━"
-echo ""
-
 TARGET="${1:-all}"
 
-# Step 1: Push source
-push_source
-
+echo "━━━ PMA Release ━━━"
 echo ""
 
-# Step 2: Deploy
-if [ "$TARGET" = "all" ]; then
-  log_info "Step 2: Deploying to all production containers..."
-  for container in "${PROD_CONTAINERS[@]}"; do
-    short_name="${container#hermes-}"
-    deploy_to_container "$short_name"
+case "$TARGET" in
+  all)
+    update_host
     echo ""
-  done
-elif [ "$TARGET" = "user1" ] || [ "$TARGET" = "user2" ]; then
-  log_info "Step 2: Deploying to ${TARGET}..."
-  deploy_to_container "$TARGET"
-else
-  log_error "Unknown target: $TARGET"
-  exit 1
-fi
+    # Auto-detect Docker containers
+    for container in hermes-user1 hermes-user2; do
+      if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${container}$"; then
+        update_docker "${container#hermes-}"
+        echo ""
+      fi
+    done
+    ;;
+  host)
+    update_host
+    ;;
+  user1|user2)
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^hermes-${TARGET}$"; then
+      update_host
+      echo ""
+      update_docker "$TARGET"
+    else
+      log_error "Container 'hermes-${TARGET}' not found."
+      exit 1
+    fi
+    ;;
+  *)
+    log_error "Unknown target: $TARGET"
+    usage
+    ;;
+esac
 
-log_info "Release complete!"
-echo ""
-echo "Production containers:"
-for container in "${PROD_CONTAINERS[@]}"; do
-  echo "  - ${container}: $(docker ps --format '{{.Status}}' --filter name="${container}" 2>/dev/null || echo 'not running')"
-done
+log_info "Release complete."

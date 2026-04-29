@@ -1,69 +1,86 @@
 #!/usr/bin/env bash
 #
-# setup-pma.sh — Initialize the Personal Memory Assistant project for a user
+# setup-pma.sh — Initialize PMA on a target machine
 #
-# Clones or updates the project repo and sets up the per-user journal
-# directory inside a Docker container.
+# Clones the project, sets up the journal directory, and syncs skills.
+# Run once on each target machine (host or Docker container).
 #
 # Usage:
-#   ./scripts/setup-pma.sh                    # Setup for host (dev) user
-#   ./scripts/setup-pma.sh user1              # Setup for Docker container user1
-#   ./scripts/setup-pma.sh user2              # Setup for Docker container user2
-#
-# Environment:
-#   PMA_REPO    GitHub repo URL (default: https://github.com/dinner3000/personal-memory-assistant.git)
+#   ./scripts/setup-pma.sh                    # Setup for current machine
+#   ./scripts/setup-pma.sh user1              # Setup in Docker container
+#   ./scripts/setup-pma.sh user2              # Setup in Docker container
 #
 
 set -euo pipefail
 
 PMA_REPO="${PMA_REPO:-https://github.com/dinner3000/personal-memory-assistant.git}"
-GITHUB_REMOTE="origin"
+PMA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 usage() {
-  echo "Usage: $0 [user]"
-  echo "  user    Docker container name (user1, user2). Omit for host (dev)."
+  echo "Usage: $0 [container]"
+  echo "  container    Docker container name (user1, user2). Omit for host."
   exit 1
 }
 
-USER="${1:-}"
+TARGET="${1:-}"
 
-setup_on_host() {
-  echo "--- Setting up PMA for host (dev) environment ---"
-  local pma_dir="$HOME/projects/personal-memory-assistant"
+sync_skills() {
+  local pma_skills="$1/skills/productivity"
+  local hermes_skills="$HOME/.hermes/skills/productivity"
 
-  if [ -d "$pma_dir" ]; then
-    echo "Project already exists at $pma_dir"
-    echo "Updating via git pull..."
-    cd "$pma_dir"
-    git pull 2>/dev/null || echo "  (already up to date or no remote)"
-  else
-    echo "Cloning project to $pma_dir..."
-    mkdir -p "$HOME/projects"
-    git clone "$PMA_REPO" "$pma_dir"
-    cd "$pma_dir"
+  if [ ! -d "$pma_skills" ]; then
+    echo "  No skills dir at $pma_skills — skipping."
+    return
   fi
 
-  mkdir -p "$pma_dir/journal/$(date +%Y)"
-  echo "Journal dir: $pma_dir/journal/"
+  mkdir -p "$hermes_skills"
+
+  for skill_dir in "$pma_skills"/*/; do
+    [ -d "$skill_dir" ] || continue
+    skill_name=$(basename "$skill_dir")
+    target="$hermes_skills/$skill_name"
+
+    if [ -d "$target" ]; then
+      rm -rf "$target"
+    fi
+    cp -r "$skill_dir" "$target"
+    echo "  Synced skill: $skill_name"
+  done
+}
+
+setup_local() {
+  echo "--- Setting up PMA for this machine ---"
+
+  if [ -d "$PMA_DIR/.git" ]; then
+    echo "Project already exists at $PMA_DIR"
+    cd "$PMA_DIR"
+    git pull 2>/dev/null || echo "  (already up to date or no remote)"
+  else
+    echo "Cloning project to $PMA_DIR..."
+    mkdir -p "$(dirname "$PMA_DIR")"
+    git clone "$PMA_REPO" "$PMA_DIR"
+    cd "$PMA_DIR"
+  fi
+
+  mkdir -p "$PMA_DIR/journal/$(date +%Y)"
+  echo "Journal dir: $PMA_DIR/journal/"
+
+  sync_skills "$PMA_DIR"
   echo "Done."
 }
 
-setup_in_docker() {
-  local container_name="$1"
-  local hermes_home="$HOME/.hermes-${container_name}"
+setup_docker() {
+  local container_name="hermes-${TARGET}"
 
-  echo "--- Setting up PMA for Docker container: ${container_name} ---"
-
-  # Ensure the Docker container is running
-  if ! docker ps --format '{{.Names}}' | grep -q "^hermes-${container_name}$"; then
-    echo "Error: Container 'hermes-${container_name}' is not running."
-    echo "Start it first and try again."
+  if ! docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+    echo "Error: Container '${container_name}' is not running."
     exit 1
   fi
 
-  # Inside the container: ~ = /opt/data
-  # Clone/update the project at ~/projects/personal-memory-assistant/
-  docker exec -u hermes "hermes-${container_name}" bash -c '
+  echo "--- Setting up PMA for Docker container: ${container_name} ---"
+
+  # Clone/update the project inside the container (as hermes user)
+  docker exec -u hermes "$container_name" bash -c '
     set -euo pipefail
     PMA_DIR="$HOME/projects/personal-memory-assistant"
     PMA_REPO="'"$PMA_REPO"'"
@@ -76,31 +93,23 @@ setup_in_docker() {
       echo "Cloning project..."
       mkdir -p "$HOME/projects"
       git clone "$PMA_REPO" "$PMA_DIR"
-      cd "$PMA_DIR"
     fi
 
-    mkdir -p "$PMA_DIR/journal/$(date +%Y)"
-    echo "Journal dir: $PMA_DIR/journal/"
-    echo "JOURNAL_PATH=$PMA_DIR/journal"
-    echo "Done."
-  '
+    mkdir -p "$PMA_DIR/journal/$(date +%Y)'
+  "
 
-  echo ""
-  echo "Container setup complete. The skills reference ~/projects/personal-memory-assistant"
-  echo "which now exists inside the container."
-  echo ""
-  echo "Note: To set up auto-sync inside this container, run the PMA daily cron"
-  echo "job inside Hermes in this container."
+  # Skills are synced via host ~/.hermes/skills mount (already done if host runs setup)
+  echo "Skills: synced via host ~/.hermes/skills mount"
+  echo "Container setup complete."
 }
 
 # ---- Main ----
 
-if [ -z "$USER" ]; then
-  setup_on_host
-elif [ "$USER" = "user1" ] || [ "$USER" = "user2" ]; then
-  setup_in_docker "$USER"
+if [ -z "$TARGET" ]; then
+  setup_local
+elif [ "$TARGET" = "user1" ] || [ "$TARGET" = "user2" ]; then
+  setup_docker
 else
-  echo "Unknown user: $USER"
-  echo "Valid values: (empty for host), user1, user2"
-  exit 1
+  echo "Unknown target: $TARGET"
+  usage
 fi

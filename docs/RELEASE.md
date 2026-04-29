@@ -2,54 +2,60 @@
 
 ## Architecture
 
-| Environment | Instance | Location | Purpose |
-|-------------|----------|----------|---------|
-| **Dev** | Host Hermes | `~/.hermes/` | Development, debugging, testing |
-| **Production** | Docker `hermes-user1` | `~/.hermes-user1/` | Production user 1 |
-| **Production** | Docker `hermes-user2` | `~/.hermes-user2/` | Production user 2 |
+| Environment | Instance | Skills location |
+|-------------|----------|----------------|
+| **Dev** | Host Hermes (`~/.hermes/`) | `~/.hermes/skills/` (synced from PMA repo) |
+| **Production** | Docker `hermes-user1` (`~/.hermes-user1/`) | Mounted from host `~/.hermes/skills/` |
+| **Production** | Docker `hermes-user2` (`~/.hermes-user2/`) | Mounted from host `~/.hermes/skills/` |
 
-**Skills** are shared across all instances via symlinks from `~/.hermes/skills/` → `~/projects/hermes-skills/`.
+**Project-scoped skills** (`journal-record`, `journal-retrieve`, `journal-digest`, `journal-relate`)
+live in the PMA repo at `skills/productivity/` and are synced to `~/.hermes/skills/` on release.
+
+**General-purpose skills** (`project-bootstrapper`, `project-continue`) live in
+`~/projects/hermes-skills/` (a separate repo — GitHub: `dinner3000/hermes-skills`).
 
 ## Initial Setup
 
-Run once to initialize the project inside each production container:
+Run once on each target machine:
 
 ```bash
-# Dev (host) — already set up
+# On the dev machine (host)
 ./scripts/setup-pma.sh
 
-# Production containers
+# On each production machine
+# SSH into the target, then:
+./scripts/setup-pma.sh
+
+# For Docker containers on the same machine:
 ./scripts/setup-pma.sh user1
 ./scripts/setup-pma.sh user2
 ```
 
 ## Release Process
 
-After making changes in the dev environment:
+SSH into the target machine, then:
 
 ```bash
-# Deploy to all production containers
+cd ~/projects/personal-memory-assistant
+
+# Deploy to all local environments (host + any Docker containers)
 ./scripts/release.sh
 
-# Or deploy to a single container
-./scripts/release.sh user1
+# Or deploy to a single target
+./scripts/release.sh host      # Host Hermes only
+./scripts/release.sh user1     # Docker container user1 only
+./scripts/release.sh user2     # Docker container user2 only
 ```
 
-The release script will:
-1. Verify all changes are committed
-2. Push to GitHub
-3. Pull the latest code into each production container
+The release script:
+1. Git pull the latest PMA code
+2. Sync PMA skills to `~/.hermes/skills/`
+3. If targeting Docker containers, also updates the project inside them
+
+Skills are automatically available in Docker containers via the `~/.hermes/skills` bind mount.
 
 ## What Gets Released
 
-- **Scripts**: `new-entry.sh`, `search.sh`, `summary.sh`, `related.sh`
-- **Config**: `journal.yaml`, `.env.example`
-- **Hermes skills**: Updated via the shared `~/.hermes/skills/` mount (no deploy needed)
-
-## Data Isolation
-
-Each production container has its own journal directory:
-- `hermes-user1`: `~/.hermes-user1/projects/personal-memory-assistant/journal/`
-- `hermes-user2`: `~/.hermes-user2/projects/personal-memory-assistant/journal/`
-
-Scripts and config are shared from the same git repo.
+- **Scripts**: `scripts/new-entry.sh`, `search.sh`, `summary.sh`, `related.sh`
+- **Skills**: `skills/productivity/journal-record`, `journal-retrieve`, `journal-digest`, `journal-relate`
+- **Config**: `config/journal.yaml`
