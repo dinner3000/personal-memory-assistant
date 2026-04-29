@@ -20,12 +20,13 @@
 #   --save          Save summary as a journal entry instead of printing
 #   -h              Show this help
 #
-# Environment: JOURNAL_PATH (defaults to ./journal)
+#   JOURNAL_PATH (defaults to $HERMES_HOME/journal)
 #
 
 set -euo pipefail
 
-JOURNAL_DIR="${JOURNAL_PATH:-$(cd "$(dirname "$0")/.." && pwd)/journal}"
+HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+JOURNAL_DIR="${JOURNAL_PATH:-$HERMES_HOME/journal}"
 
 if [ ! -d "$JOURNAL_DIR" ]; then
   echo "Error: journal directory not found at $JOURNAL_DIR"

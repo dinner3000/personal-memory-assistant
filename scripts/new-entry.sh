@@ -21,7 +21,7 @@
 #   --help          Show this help
 #
 # Environment:
-#   JOURNAL_PATH    Path to journal directory (default: ./journal)
+#   JOURNAL_PATH    Path to journal directory (default: $HERMES_HOME/journal)
 #   EDITOR          Editor to use (default: vim)
 #
 
@@ -94,7 +94,8 @@ fi
 
 # ---- Determine paths ----
 
-JOURNAL_DIR="${JOURNAL_PATH:-$(cd "$(dirname "$0")/.." && pwd)/journal}"
+HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+JOURNAL_DIR="${JOURNAL_PATH:-$HERMES_HOME/journal}"
 DATE=$(date "+%Y-%m-%d")
 YEAR=$(date "+%Y")
 MONTH_DAY=$(date "+%m-%d")
