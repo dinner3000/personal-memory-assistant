@@ -20,7 +20,6 @@
 - [x] Skill: `journal-record` — I write entries when you tell me things
 - [x] Skill: `journal-retrieve` — I search + summarize when you ask
 - [x] Skill: `journal-digest` — I generate periodic summaries proactively
-- [ ] Register skills in the Hermes skills hub
 
 ## Phase 4: Advanced Retrieval
 
