@@ -28,9 +28,9 @@
 
 ## Phase 5: Multi-Device Sync
 
-- [ ] git auto-push/pull for journal sync across machines
-- [x] Cron job for periodic commit + push (weekly digest auto-commits)
-- [ ] Mobile access (via Obsidian sync or Hermes gateway)
+- [x] git auto-push/pull for journal sync across machines
+- [x] Cron job for periodic commit + push (daily sync at 11 PM + weekly digest)
+- [x] Mobile access (via Obsidian sync or Hermes gateway)
 
 ## Phase 6: Proactive Intelligence
 
