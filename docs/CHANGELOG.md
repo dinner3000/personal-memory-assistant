@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-04-29
+
+### Added
+
+- `journal-retrieve` Hermes skill — searches and summarizes journal entries on demand
+  - Triggered by "find...", "search for...", "what did I do...", "summarize..."
+  - Uses search.sh and summary.sh as backends
+  - Presents results naturally, offers to record if nothing found
+  - Stored at ~/projects/hermes-skills/productivity/journal-retrieve/
+
 ## [0.5.0] — 2026-04-28
 
 ### Added
