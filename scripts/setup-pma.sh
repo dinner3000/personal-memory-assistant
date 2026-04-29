@@ -7,8 +7,8 @@
 #
 # Usage:
 #   ./scripts/setup-pma.sh                    # Setup for current machine
-#   ./scripts/setup-pma.sh user1              # Setup in Docker container
-#   ./scripts/setup-pma.sh user2              # Setup in Docker container
+#   ./scripts/setup-pma.sh hermes-user1       # Setup in Docker container
+#   ./scripts/setup-pma.sh hermes-user2       # Setup in Docker container
 #
 
 set -euo pipefail
@@ -18,7 +18,7 @@ PMA_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 usage() {
   echo "Usage: $0 [container]"
-  echo "  container    Docker container name (user1, user2). Omit for host."
+  echo "  container    Docker container name (e.g., hermes-user1). Omit for host."
   exit 1
 }
 
@@ -70,7 +70,7 @@ setup_local() {
 }
 
 setup_docker() {
-  local container_name="hermes-${TARGET}"
+  local container_name="$TARGET"
 
   if ! docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
     echo "Error: Container '${container_name}' is not running."
@@ -107,9 +107,10 @@ setup_docker() {
 
 if [ -z "$TARGET" ]; then
   setup_local
-elif [ "$TARGET" = "user1" ] || [ "$TARGET" = "user2" ]; then
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${TARGET}$"; then
   setup_docker
 else
   echo "Unknown target: $TARGET"
+  echo "Provide a running Docker container name (e.g., hermes-user1) or omit for host."
   usage
 fi

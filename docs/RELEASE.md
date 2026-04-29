@@ -38,13 +38,13 @@ SSH into the target machine, then:
 ```bash
 cd ~/projects/personal-memory-assistant
 
-# Deploy to all local environments (host + any Docker containers)
-./scripts/release.sh
+# Deploy to a host Hermes profile
+./scripts/release.sh --type host --path ~/.hermes
+./scripts/release.sh --type host --path ~/.hermes-user1
 
-# Or deploy to a single target
-./scripts/release.sh host      # Host Hermes only
-./scripts/release.sh user1     # Docker container user1 only
-./scripts/release.sh user2     # Docker container user2 only
+# Deploy to a Docker container
+./scripts/release.sh --type docker --container hermes-user1
+./scripts/release.sh --type docker --container hermes-user2
 ```
 
 The release script:
