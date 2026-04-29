@@ -4,6 +4,17 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] — 2026-04-29
+
+### Added
+
+- `related.sh` — cross-reference and relationship mapping between entries
+  - Finds related entries by shared tags (2 pts), people (2 pts), keywords (1 pt)
+  - Accepts filename fragment, full path, or title as input
+  - Sorted by relevance score with optional breakdown (`-t`)
+  - `-n N` to limit results
+- `journal-relate` Hermes skill — "what's related to [entry]?"
+
 ## [0.8.0] — 2026-04-29
 
 ### Added
