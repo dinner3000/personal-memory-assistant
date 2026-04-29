@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] — 2026-04-29
+
+### Added
+
+- `journal-digest` Hermes skill — weekly summary generation
+- Weekly cron job `pma-weekly-digest` runs every Sunday at 20:00
+  - Generates a 7-day summary via `summary.sh -w --save`
+  - Auto-commits and pushes to GitHub
+  - No manual intervention needed
+
 ## [0.6.0] — 2026-04-29
 
 ### Added

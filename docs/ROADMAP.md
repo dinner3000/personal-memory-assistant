@@ -19,7 +19,7 @@
 
 - [x] Skill: `journal-record` — I write entries when you tell me things
 - [x] Skill: `journal-retrieve` — I search + summarize when you ask
-- [ ] Skill: `journal-digest` — I generate periodic summaries proactively
+- [x] Skill: `journal-digest` — I generate periodic summaries proactively
 - [ ] Register skills in the Hermes skills hub
 
 ## Phase 4: Advanced Retrieval
@@ -32,7 +32,7 @@
 ## Phase 5: Multi-Device Sync
 
 - [ ] git auto-push/pull for journal sync across machines
-- [ ] Cron job for periodic commit + push
+- [x] Cron job for periodic commit + push (weekly digest auto-commits)
 - [ ] Mobile access (via Obsidian sync or Hermes gateway)
 
 ## Phase 6: Proactive Intelligence
