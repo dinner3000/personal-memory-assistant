@@ -80,6 +80,20 @@ Saved to journal: [date] — [title]
   File: journal/YYYY/MM-DD-title.md
 ```
 
+### Step 4: Check Remote (first entry only)
+
+After saving the entry, check if the journal has a remote configured for backup:
+
+```bash
+cd ~/.hermes/journal && git remote -v
+```
+
+Or use $HERMES_HOME if set. If **no remote** is configured (output is empty), mention it once:
+
+> "Your journal is saved locally. If you'd like to set up GitHub backup for automatic daily sync, just say 'set up journal backup' and I'll guide you through it."
+
+Do NOT repeat this warning on subsequent entries in the same session. Do NOT be pushy. If the user already knows and doesn't care, drop it.
+
 ## Examples
 
 **User:** "Remember that Alice and I decided to push the deadline to next Friday."
