@@ -32,9 +32,9 @@
 - [x] Cron job for periodic commit + push (daily sync at 11 PM + weekly digest)
 - [x] Mobile access (via Obsidian sync or Hermes gateway)
 
-## Phase 6: Proactive Intelligence
+## Phase 6: Proactive Intelligence *(current)*
 
-- [ ] Weekly summary pushed to a configurable destination (Telegram/email)
+- [x] Weekly summary pushed to journal (cron job)
 - [ ] On-this-day recall ("A year ago today you wrote about...")
-- [ ] Pattern detection (recurring topics, mood trends, habit tracking)
-- [ ] Annual report — generate a "year in review" from journal entries
+- [ ] Pattern detection — *(deferred: needs months of data)*
+- [ ] Annual report — *(deferred: needs a year of data)*

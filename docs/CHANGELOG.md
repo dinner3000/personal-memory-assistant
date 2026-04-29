@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] — 2026-04-29
+
+### Added
+
+- **Release workflow** — `scripts/release.sh` deploys updates to Docker containers
+- **Setup script** — `scripts/setup-pma.sh` initializes PMA in any environment
+- **Release guide** — `docs/RELEASE.md` documents dev/prod architecture
+
+### Changed
+
+- Phase 6 reorganized: deferred data-heavy items, marked weekly digest as done
+- Phase 5 completed: daily sync cron, mobile access via git clone + Obsidian
+
 ## [0.9.0] — 2026-04-29
 
 ### Added
