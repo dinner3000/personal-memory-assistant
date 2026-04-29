@@ -46,8 +46,10 @@ You tell me something ──► Hermes session
 | [docs/TECH-STACK.md](docs/TECH-STACK.md) | Technology choices and rationale |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases and future plans |
 | [docs/CHANGELOG.md](docs/CHANGELOG.md) | What's been done, when |
+| [docs/RELEASE.md](docs/RELEASE.md) | Dev/prod architecture, deploy instructions |
 | [docs/VALIDATION.md](docs/VALIDATION.md) | Test scenarios and acceptance criteria |
 | [docs/decisions/](docs/decisions/) | Architecture Decision Records |
+| [skills/productivity/](skills/productivity/) | Hermes skills (journal-record, etc.) |
 
 ## License
 
